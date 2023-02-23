@@ -18,76 +18,68 @@ struct LintMaker: AsyncParsableCommand {
     @Flag(name: .long, help: "Clean current work space")
     var clean: Bool = false
     
+    @Flag(name: .long)
+    var install: Bool = true
+    
     // 1. clone 文件夹到当前目录或者给定目录
     // 2 cp 相关文件到当前目录或者给定目录
     @available(macOS 10.15.0, *)
     func run() async throws {
         
-        let workPath = self.path != nil ? self.path : executeShell(["pwd"]).0
+        // 获取当前目录
+        let workPath = self.path != nil ? self.path : GZShellExecute.execute(["pwd"]).0
         
         guard let path = workPath else {
-            GZLog.log("获取当前目录出错...", type: .fatalError)
+            GZLog.log("Get current execute directory failed...", type: .fatalError)
             return
         }
         
+        // 清理当前目录空间
         if clean == true {
             cleanWorkSpace(currentDirectory: path)
             return
         }
         
+        // 下载远程库
         let lintRespository = URL(string: clonePath)?.deletingPathExtension().lastPathComponent ?? "gzlint"
-        GZLog.log(lintRespository, type: .info)
         let destinationPath = URL(fileURLWithPath: path.replacingOccurrences(of: "\n", with: "")).appendingPathComponent(lintRespository).path
-        executeShell(["cd \(path)"])
+        GZShellExecute.execute(["cd \(path)"])
         
         cleanWorkSpace(currentDirectory: path)
         
         
-        GZLog.log("开始下载远程资源请稍后...", type: .info)
-        let output = executeShell(["git clone \(clonePath)"]).1
+        GZLog.log("Downloading remote resources...", type: .begin)
+        let output = GZShellExecute.execute(["git clone \(clonePath)"]).1
         
         guard output == .success else {
-            GZLog.log("下载资源文件失败，具体地址：\(clonePath)", type: .fatalError)
+            GZLog.log("Download failed，please check：\(clonePath)", type: .fatalError)
             return
         }
         
-        GZLog.log("下载完成", type: .info)
+        GZLog.log("Download completed", type: .end)
         
         
-        
-        if FileManager.default.fileExists(atPath: destinationPath) == true {
-            GZLog.log("移动配置文件到当前工作目录...", type: .info)
-            let result = executeShell(["mv \(destinationPath)/\(clangFile) \(destinationPath)/\(preCommitHookFile) \(destinationPath)/\(swiftLintFile) \(path)"])
-            if result.1 == .failed {
-                print("移动文件失败...(失败原因：\(result.0)")
-                return
-            }
-            GZLog.log("移动配置文件完成", type: .info)
-            
-            try? FileManager.default.removeItem(atPath: destinationPath)
+        // copy 资源到目录，完事删除远程目录
+        guard FileManager.default.fileExists(atPath: destinationPath) == true else {
+            return
         }
         
-    }
-    
-    @discardableResult
-    private func executeShell(_ args: [String]) -> (String, ExecuteShellStatus) {
-        let task = Process()
-        let newArgs: [String] = ["-c"]
-        task.launchPath = "/bin/bash"
-        task.arguments = newArgs + args
-        let pipe = Pipe()
-        task.standardOutput = pipe
-//        task.standardError = pipe
-        task.launch()
-        task.waitUntilExit()
-        let data = pipe.fileHandleForReading.readDataToEndOfFile()
-        let output: String = String(data: data, encoding: String.Encoding(rawValue: String.Encoding.utf8.rawValue)) ?? ""
-        let status: ExecuteShellStatus = task.terminationStatus == 0 ? .success : .failed
-        return (output, status)
+        GZLog.log("Moving config file to workspace", type: .begin)
+        let result = GZShellExecute.execute(["mv \(destinationPath)/\(clangFile) \(destinationPath)/\(preCommitHookFile) \(destinationPath)/\(swiftLintFile) \(path)"])
+        if result.1 == .failed {
+            GZLog.log("Moving failed ...(reason：\(result.0)", type: .fatalError)
+            return
+        }
+        GZLog.log("Move config file has completed", type: .end)
+        
+        try? FileManager.default.removeItem(atPath: destinationPath)
+        
+        GZCheckTools.check()
+        
     }
     
     private func cleanWorkSpace(currentDirectory: String) {
-        GZLog.log("清理原有文件...", type: .info)
+        GZLog.log("Clean workspace", type: .begin)
         let fm = FileManager.default
         var isDirectory: ObjCBool = ObjCBool(false)
         let lintRespository = URL(string: clonePath)?.deletingPathExtension().lastPathComponent ?? "gzlint"
@@ -113,33 +105,6 @@ struct LintMaker: AsyncParsableCommand {
             try? fm.removeItem(atPath: swiftLintPath)
         }
         
-        GZLog.log("清理完成", type: .info)
+        GZLog.log("Clean completed", type: .end)
     }
-}
-
-struct GZLog {
-    static func log(_ msg: String, type: LogType) {
-        switch type {
-        case .info:
-            print("======== \(msg)")
-            break
-        case .error:
-            print("error: \(msg.isEmpty ? "无" : msg)")
-            break
-        case .fatalError:
-            print("error: \(msg.isEmpty ? "无" : msg)")
-            abort()
-        }
-    }
-}
-
-enum ExecuteShellStatus {
-    case success
-    case failed
-}
-
-enum LogType {
-    case info
-    case error
-    case fatalError
 }
