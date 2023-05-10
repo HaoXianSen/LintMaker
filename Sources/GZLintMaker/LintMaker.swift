@@ -14,7 +14,10 @@ struct LintMaker: AsyncParsableCommand {
     @Flag(name: .long, help: "install all in current workspace")
     var install: Bool = false
     
-    @Flag(name: .long, help: "unistall all in current workspace, default 'false'")
+    @Flag(name: .long, help: "clean current workspace, default 'false'")
+    var clean: Bool = false
+    
+    @Flag(name: .long, help: "uninstall linter tools in current workspace, default 'false'")
     var uninstall: Bool = false
     
     @Option(name: .shortAndLong, help: "Please input a workspace path")
@@ -36,16 +39,29 @@ struct LintMaker: AsyncParsableCommand {
         }
         
         // 清理当前目录空间
-        if uninstall {
-            cleanWorkSpace(currentDirectory: path)
+        guard isCleanOrUninstall(path) == false else {
             return
         }
         
-        // 下载Config文件
+        // 下载Config 文件
         downloadFileAndCopy(with: path)
         
-        CheckTools.installTools()
+        // 安装lint 工具
+        LinterToolsManager.installTools()
         
+    }
+    
+    private func isCleanOrUninstall(_ workspace: String) -> Bool {
+        var result = false
+        if clean {
+            cleanWorkSpace(currentDirectory: workspace)
+            result = true
+        }
+        if uninstall {
+            LinterToolsManager.uninstallTools()
+            result = true
+        }
+        return result
     }
 }
 

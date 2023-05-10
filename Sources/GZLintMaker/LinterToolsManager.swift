@@ -8,7 +8,7 @@
 import Foundation
 
 /// 检查lint 安装工具
-struct CheckTools {
+struct LinterToolsManager {
     
     typealias CheckResult = (success: Bool, output: String)
     
@@ -64,16 +64,35 @@ struct CheckTools {
         }
         
         animation.end()
-        output.forEach { string in
-            queuePrint(string)
-        }
+        self.printAllMessage(output)
         
         queuePrint(" ...................所有工具都安装成功， pre-commit 验证开始生效，快去试试git commit 吧😁😁😁 ")
         return true
     }
+    
+    
+    /// 移除Objective-CLint 和 swiftLint
+    /// - Returns: 是否全部安装成功
+    @discardableResult
+    static func uninstallTools() -> Bool {
+        var outputs: [String] = []
+        let uninstallObjectiveCLintResult = self.uninstallObjectiveCLintTool()
+        let uninstallSwiftLintResult = self.uninstallSwiftLintTool()
+        outputs.append(uninstallObjectiveCLintResult.1)
+        outputs.append(uninstallSwiftLintResult.1)
+        self.printAllMessage(outputs)
+        return uninstallObjectiveCLintResult.0 && uninstallSwiftLintResult.0
+    }
+    
+    private static func printAllMessage(_ outputs: [String]) {
+        outputs.forEach { string in
+            queuePrint(string)
+        }
+    }
 }
 
-extension CheckTools {
+//MARK: - install
+extension LinterToolsManager {
     /// @description 检查homebrew是否安装 | 安装homebrew
     /// @discuss 如果已经安装homebrew则直接返回， 如果未安装则会自动安装homebrew
     /// @return (_ success: Bool, _ output: String)
@@ -112,6 +131,26 @@ extension CheckTools {
     fileprivate static func checkSwiftLintTool() -> CheckResult {
         let objectiveCLintResult = scriptExecute(["brew install swiftLint"])
         let msg = objectiveCLintResult.status == .failed ? "安装swiftLint失败， 原因：\(objectiveCLintResult.stdout.isEmpty ? objectiveCLintResult.stderr : objectiveCLintResult.stdout)" : "swiftLint 安装完成"
+        return (objectiveCLintResult.status == .success, msg)
+    }
+}
+
+//MARK: - uninstall
+extension LinterToolsManager {
+    
+    /// @description 移除Objective-CLint
+    /// @return (_ success: Bool, _ output: String)
+    fileprivate static func uninstallObjectiveCLintTool() -> CheckResult {
+        let objectiveCLintResult = scriptExecute(["brew uninstall Objective-CLint"])
+        let msg = objectiveCLintResult.status == .failed ? "移除ObjectiveC-Lint失败， 原因：\(objectiveCLintResult.stdout.isEmpty ? objectiveCLintResult.stderr : objectiveCLintResult.stdout)" : "ObjectiveC-Lint 移除完成"
+        return (objectiveCLintResult.status == .success, msg)
+    }
+    
+    /// @description 移除swiftLint
+    /// @return (_ success: Bool, _ output: String)
+    fileprivate static func uninstallSwiftLintTool() -> CheckResult {
+        let objectiveCLintResult = scriptExecute(["brew uninstall swiftLint"])
+        let msg = objectiveCLintResult.status == .failed ? "移除swiftLint失败， 原因：\(objectiveCLintResult.stdout.isEmpty ? objectiveCLintResult.stderr : objectiveCLintResult.stdout)" : "swiftLint 移除完成"
         return (objectiveCLintResult.status == .success, msg)
     }
 }
