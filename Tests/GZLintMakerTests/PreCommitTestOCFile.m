@@ -11,7 +11,6 @@
 
 - (void)testFunctionParams:(id)params1
                    params2:(id)params2
-                   params3:(id)params3
 {
     
 }
