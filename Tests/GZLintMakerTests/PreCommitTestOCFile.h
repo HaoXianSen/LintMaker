@@ -9,10 +9,12 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+
 @interface PreCommitTestOCFile : NSObject
 
 - (void)testFunctionParams:(id)params1
-                   params2:(id)params2;
+                   params2:(id)params2
+                   params3:(id)params2;
 
 @end
 

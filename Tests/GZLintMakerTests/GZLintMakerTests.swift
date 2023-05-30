@@ -8,4 +8,7 @@ final class GZLintMakerTests: XCTestCase {
         // results.
         XCTAssertEqual(GZLintMaker().text, "Hello, World!")
     }
+    
+    func test(aString: String) {
+    }
 }

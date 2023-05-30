@@ -32,14 +32,14 @@ public func queuePrint<T>(_ object: T) {
     }
 }
 
-public func printError(_ aString: String) {
+public func ququePrintError(_ aString: String) {
     printQueue.async {
         fflush(stdout)
         fputs(aString + "\n", stderr)
     }
 }
 
-public func printFatalError(_ aString: String, file: StaticString = #file, line: Int = #line) -> Never {
+public func ququePrintFatalError(_ aString: String, file: StaticString = #file, line: Int = #line) -> Never {
     printQueue.sync {
         fflush(stdout)
         var file = "\(file)" as NSString
