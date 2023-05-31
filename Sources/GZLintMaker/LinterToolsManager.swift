@@ -18,19 +18,19 @@ struct LinterToolsManager {
     /// - Returns: 返回是否都安装成功
     @discardableResult
     static func installTools() -> Bool {
-        let animation = WaitingAnimation()
-        animation.prefix = "正在检查所有lint工具..."
-        DispatchQueue.global().async {
-            animation.begin()
-        }
-        
+//        let animation = WaitingAnimation()
+//        animation.prefix = "正在检查所有lint工具..."
+//        DispatchQueue.global().async {
+//            animation.begin()
+//        }
+        mPrint("正在检查所有lint工具...")
         var output: [String] = []
         
         let homeBrewResult = self.checkHomebrew()
         if homeBrewResult.0 == true {
             output.append(homeBrewResult.1)
         } else {
-            animation.end()
+//            animation.end()
             printError(homeBrewResult.1)
             return false
         }
@@ -39,7 +39,7 @@ struct LinterToolsManager {
         if brewTapResult.0 == true {
             output.append(brewTapResult.1)
         } else {
-            animation.end()
+//            animation.end()
             printError(brewTapResult.1)
             return false
         }
@@ -48,8 +48,17 @@ struct LinterToolsManager {
         if coreUtilsResult.0 == true {
             output.append(coreUtilsResult.1)
         } else {
-            animation.end()
+//            animation.end()
             printError(coreUtilsResult.1)
+            return false
+        }
+        
+        let python3Result = self.checkPython3()
+        if python3Result.0 == true {
+            output.append(python3Result.1)
+        } else {
+//            animation.end()
+            printError(python3Result.1)
             return false
         }
         
@@ -57,7 +66,7 @@ struct LinterToolsManager {
         if ocLintResult.0 == true {
             output.append(ocLintResult.1)
         } else {
-            animation.end()
+//            animation.end()
             printError(ocLintResult.1)
             return false
         }
@@ -66,12 +75,12 @@ struct LinterToolsManager {
         if swiftLintResult.0 == true {
             output.append(swiftLintResult.1)
         } else {
-            animation.end()
+//            animation.end()
             printError(swiftLintResult.1)
             return false
         }
         
-        animation.end()
+//        animation.end()
         self.printAllMessage(output)
         
         mPrint("所有工具都安装成功， code lint生效，快去git commit 试试吧! ", textColor: greenForegroundColor)
@@ -118,8 +127,8 @@ extension LinterToolsManager {
     /// - 安装 haoxiansen/homebrew-private 或者直接更新
     /// - Returns: (_ success: Bool, _ output: String)
     fileprivate static func checkBrewTap() -> CheckResult {
-        let privateHomebrewResult = scriptExecute(["brew tap haoxiansen/homebrew-private https://github.com/haoxiansen/homebrew-private"])
-        let msg = privateHomebrewResult.status == .failed ? "安装haoxiansen/homebrew-private 失败， 原因：\(privateHomebrewResult.stdout.isEmpty ? privateHomebrewResult.stderr : privateHomebrewResult.stdout)" : "haoxiansen/homebrew-private 安装完成"
+        let privateHomebrewResult = scriptExecute(["brew tap haoxiansen/private"])
+        let msg = privateHomebrewResult.status == .failed ? "安装haoxiansen/private 失败， 原因：\(privateHomebrewResult.stdout.isEmpty ? privateHomebrewResult.stderr : privateHomebrewResult.stdout)" : "brew tap haoxiansen/private 安装完成"
         return (privateHomebrewResult.status == .success, msg)
     }
     
@@ -127,8 +136,8 @@ extension LinterToolsManager {
     /// - 主动安装最新版本的 Objective-CLint
     /// - Returns: (_ success: Bool, _ output: String)
     fileprivate static func checkObjectiveCLintTool() -> CheckResult {
-        let objectiveCLintResult = scriptExecute(["brew install Objective-CLint"])
-        let msg = objectiveCLintResult.status == .failed ? "安装ObjectiveC-Lint失败， 原因：\(objectiveCLintResult.stdout.isEmpty ? objectiveCLintResult.stderr : objectiveCLintResult.stdout)" : "ObjectiveC-Lint 安装完成"
+        let objectiveCLintResult = scriptExecute(["brew update && brew install objc-lint && brew upgrade objc-lint"])
+        let msg = objectiveCLintResult.status == .failed ? "安装objc-lint失败， 原因：\(objectiveCLintResult.stdout.isEmpty ? objectiveCLintResult.stderr : objectiveCLintResult.stdout)" : "objc-lint 安装完成"
         return (objectiveCLintResult.status == .success, msg)
     }
     
@@ -147,6 +156,15 @@ extension LinterToolsManager {
     fileprivate static func checkCoreUtils() -> CheckResult {
         let coreUtilsResult = scriptExecute(["brew install coreutils"])
         let msg = coreUtilsResult.status == .failed ? "安装coreutils失败， 原因：\(coreUtilsResult.stdout.isEmpty ? coreUtilsResult.stderr : coreUtilsResult.stdout)" : "coreutils 安装完成"
+        return (coreUtilsResult.status == .success, msg)
+    }
+    
+    /// 安装python3用来实现脚本执行时长统计
+    /// - ObjectiveC-Lint 需要python3执行一些脚本
+    /// - Returns: (_ success: Bool, _ output: String)
+    fileprivate static func checkPython3() -> CheckResult {
+        let coreUtilsResult = scriptExecute(["brew install python3"])
+        let msg = coreUtilsResult.status == .failed ? "安装python3失败， 原因：\(coreUtilsResult.stdout.isEmpty ? coreUtilsResult.stderr : coreUtilsResult.stdout)" : "安装python3 安装完成"
         return (coreUtilsResult.status == .success, msg)
     }
 }
