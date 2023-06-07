@@ -9,8 +9,8 @@ let package = Package(
     products: [
         // Products define the executables and libraries a package produces, and make them visible to other packages.
         .executable(
-            name: "lintMaker",
-            targets: ["GZLintMaker"]),
+            name: "lintmaker",
+            targets: ["GZLintMaker"])
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-argument-parser", from: "1.2.0")

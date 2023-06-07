@@ -13,7 +13,7 @@ public enum ExecuteShellStatus {
 }
 
 @discardableResult
-public func scriptExecute(_ args: [String]) -> (status: ExecuteShellStatus, stdout: String, stderr: String) {
+public func scriptExecute(_ args: [String]) -> (status: ExecuteShellStatus, stdout: String) {
     let task = Process()
     let newArgs: [String] = ["-c"]
     task.launchPath = "/bin/bash"
@@ -34,5 +34,5 @@ public func scriptExecute(_ args: [String]) -> (status: ExecuteShellStatus, stdo
     let output: String = stdoutData.flatMap { String(data: $0, encoding: .utf8)} ?? ""
     let errOutput: String = stderrData.flatMap { String(data: $0, encoding: .utf8)} ?? ""
     let status: ExecuteShellStatus = task.terminationStatus == 0 ? .success : .failed
-    return (status, output, errOutput)
+    return (status, output + errOutput)
 }

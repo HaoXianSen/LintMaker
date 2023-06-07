@@ -18,86 +18,108 @@ struct LinterToolsManager {
     /// - Returns: 返回是否都安装成功
     @discardableResult
     static func installTools() -> Bool {
-//        let animation = WaitingAnimation()
-//        animation.prefix = "正在检查所有lint工具..."
-//        DispatchQueue.global().async {
-//            animation.begin()
-//        }
         mPrint("正在检查所有lint工具...")
+        
         var output: [String] = []
+        var result = true
         
         let homeBrewResult = self.checkHomebrew()
-        if homeBrewResult.0 == true {
-            output.append(homeBrewResult.1)
+        if homeBrewResult.success == true {
+            output.append(homeBrewResult.output)
         } else {
-//            animation.end()
-            printError(homeBrewResult.1)
-            return false
+            printError(homeBrewResult.output)
+            result = false
         }
         
         let brewTapResult = self.checkBrewTap()
-        if brewTapResult.0 == true {
-            output.append(brewTapResult.1)
+        if brewTapResult.success == true {
+            output.append(brewTapResult.output)
         } else {
-//            animation.end()
-            printError(brewTapResult.1)
-            return false
+            printError(brewTapResult.output)
+            result = false
         }
         
         let coreUtilsResult = self.checkCoreUtils()
-        if coreUtilsResult.0 == true {
-            output.append(coreUtilsResult.1)
+        if coreUtilsResult.success == true {
+            output.append(coreUtilsResult.output)
         } else {
-//            animation.end()
-            printError(coreUtilsResult.1)
-            return false
+            printError(coreUtilsResult.output)
+            result = false
         }
         
         let python3Result = self.checkPython3()
-        if python3Result.0 == true {
-            output.append(python3Result.1)
+        if python3Result.success == true {
+            output.append(python3Result.output)
         } else {
-//            animation.end()
-            printError(python3Result.1)
-            return false
+            printError(python3Result.output)
+            result = false
         }
         
         let ocLintResult = self.checkObjectiveCLintTool()
-        if ocLintResult.0 == true {
-            output.append(ocLintResult.1)
+        if ocLintResult.success == true {
+            output.append(ocLintResult.output)
         } else {
-//            animation.end()
-            printError(ocLintResult.1)
-            return false
+            printError(ocLintResult.output)
+            result = false
         }
         
         let swiftLintResult = self.checkSwiftLintTool()
-        if swiftLintResult.0 == true {
-            output.append(swiftLintResult.1)
+        if swiftLintResult.success == true {
+            output.append(swiftLintResult.output)
         } else {
-//            animation.end()
-            printError(swiftLintResult.1)
-            return false
+            printError(swiftLintResult.output)
+            result = false
         }
         
-//        animation.end()
         self.printAllMessage(output)
         
-        mPrint("所有工具都安装成功， code lint生效，快去git commit 试试吧! ", textColor: greenForegroundColor)
-        return true
+        if result {
+            mPrint("所有工具都安装成功， code lint生效，快去git commit 试试吧! ", textColor: greenForegroundColor)
+        }
+        return result
     }
     
     /// 移除Objective-CLint 和 swiftLint
     /// - Returns: 是否全部安装成功
     @discardableResult
     static func uninstallTools() -> Bool {
+        mPrint("uninstall lint tools ...")
+        
+        var returnResult = true
         var outputs: [String] = []
         let uninstallObjectiveCLintResult = self.uninstallObjectiveCLintTool()
         let uninstallSwiftLintResult = self.uninstallSwiftLintTool()
-        outputs.append(uninstallObjectiveCLintResult.1)
-        outputs.append(uninstallSwiftLintResult.1)
+        if uninstallObjectiveCLintResult.success {
+            outputs.append(uninstallObjectiveCLintResult.1)
+        } else {
+            printError(uninstallObjectiveCLintResult.output)
+            returnResult = false
+        }
+        
+        if uninstallSwiftLintResult.success {
+            outputs.append(uninstallSwiftLintResult.1)
+        } else {
+            printError(uninstallSwiftLintResult.output)
+            returnResult = false
+        }
+        
         self.printAllMessage(outputs)
-        return uninstallObjectiveCLintResult.0 && uninstallSwiftLintResult.0
+        
+        return returnResult
+    }
+    
+    /// 更新brew 以及 objc-lint swift lint
+    /// - Returns: 是否更新成功
+    @discardableResult
+    static func updateTools() -> Bool {
+        mPrint("update lint tool...")
+        let result = update()
+        if result.success == true {
+            printInfo("update success")
+        } else {
+            printError("update failed, error: \(result.output)")
+        }
+        return result.0
     }
     
     private static func printAllMessage(_ outputs: [String]) {
@@ -128,7 +150,7 @@ extension LinterToolsManager {
     /// - Returns: (_ success: Bool, _ output: String)
     fileprivate static func checkBrewTap() -> CheckResult {
         let privateHomebrewResult = scriptExecute(["brew tap haoxiansen/private"])
-        let msg = privateHomebrewResult.status == .failed ? "安装haoxiansen/private 失败， 原因：\(privateHomebrewResult.stdout.isEmpty ? privateHomebrewResult.stderr : privateHomebrewResult.stdout)" : "brew tap haoxiansen/private 安装完成"
+        let msg = privateHomebrewResult.status == .failed ? "安装haoxiansen/private 失败， 原因：\(privateHomebrewResult.stdout)" : "brew tap haoxiansen/private 安装完成"
         return (privateHomebrewResult.status == .success, msg)
     }
     
@@ -137,7 +159,7 @@ extension LinterToolsManager {
     /// - Returns: (_ success: Bool, _ output: String)
     fileprivate static func checkObjectiveCLintTool() -> CheckResult {
         let objectiveCLintResult = scriptExecute(["brew update && brew install objc-lint && brew upgrade objc-lint"])
-        let msg = objectiveCLintResult.status == .failed ? "安装objc-lint失败， 原因：\(objectiveCLintResult.stdout.isEmpty ? objectiveCLintResult.stderr : objectiveCLintResult.stdout)" : "objc-lint 安装完成"
+        let msg = objectiveCLintResult.status == .failed ? "安装objc-lint失败， 原因：\(objectiveCLintResult.stdout)" : "objc-lint 安装完成"
         return (objectiveCLintResult.status == .success, msg)
     }
     
@@ -145,8 +167,8 @@ extension LinterToolsManager {
     /// - 主动安装最新版本的 swiftLint
     /// - Returns: (_ success: Bool, _ output: String)
     fileprivate static func checkSwiftLintTool() -> CheckResult {
-        let objectiveCLintResult = scriptExecute(["brew install swiftLint"])
-        let msg = objectiveCLintResult.status == .failed ? "安装swiftLint失败， 原因：\(objectiveCLintResult.stdout.isEmpty ? objectiveCLintResult.stderr : objectiveCLintResult.stdout)" : "swiftLint 安装完成"
+        let objectiveCLintResult = scriptExecute(["brew install swiftLint && brew upgrade swiftlint"])
+        let msg = objectiveCLintResult.status == .failed ? "安装swiftLint失败， 原因：\(objectiveCLintResult.stdout)" : "swiftLint 安装完成"
         return (objectiveCLintResult.status == .success, msg)
     }
     
@@ -155,7 +177,7 @@ extension LinterToolsManager {
     /// - Returns: (_ success: Bool, _ output: String)
     fileprivate static func checkCoreUtils() -> CheckResult {
         let coreUtilsResult = scriptExecute(["brew install coreutils"])
-        let msg = coreUtilsResult.status == .failed ? "安装coreutils失败， 原因：\(coreUtilsResult.stdout.isEmpty ? coreUtilsResult.stderr : coreUtilsResult.stdout)" : "coreutils 安装完成"
+        let msg = coreUtilsResult.status == .failed ? "安装coreutils失败， 原因：\(coreUtilsResult.stdout)" : "coreutils 安装完成"
         return (coreUtilsResult.status == .success, msg)
     }
     
@@ -164,7 +186,7 @@ extension LinterToolsManager {
     /// - Returns: (_ success: Bool, _ output: String)
     fileprivate static func checkPython3() -> CheckResult {
         let coreUtilsResult = scriptExecute(["brew install python3"])
-        let msg = coreUtilsResult.status == .failed ? "安装python3失败， 原因：\(coreUtilsResult.stdout.isEmpty ? coreUtilsResult.stderr : coreUtilsResult.stdout)" : "安装python3 安装完成"
+        let msg = coreUtilsResult.status == .failed ? "安装python3失败， 原因：\(coreUtilsResult.stdout)" : "安装python3 安装完成"
         return (coreUtilsResult.status == .success, msg)
     }
 }
@@ -175,16 +197,25 @@ extension LinterToolsManager {
     /// @description 移除Objective-CLint
     /// @return (_ success: Bool, _ output: String)
     fileprivate static func uninstallObjectiveCLintTool() -> CheckResult {
-        let objectiveCLintResult = scriptExecute(["brew uninstall Objective-CLint"])
-        let msg = objectiveCLintResult.status == .failed ? "移除ObjectiveC-Lint失败， 原因：\(objectiveCLintResult.stdout.isEmpty ? objectiveCLintResult.stderr : objectiveCLintResult.stdout)" : "ObjectiveC-Lint 移除完成"
+        let objectiveCLintResult = scriptExecute(["brew uninstall objc-lint"])
+        let msg = objectiveCLintResult.status == .failed ? "移除objc-lint失败， 原因：\(objectiveCLintResult.stdout)" : "objc-lint 移除完成"
         return (objectiveCLintResult.status == .success, msg)
     }
     
     /// @description 移除swiftLint
     /// @return (_ success: Bool, _ output: String)
     fileprivate static func uninstallSwiftLintTool() -> CheckResult {
-        let objectiveCLintResult = scriptExecute(["brew uninstall swiftLint"])
-        let msg = objectiveCLintResult.status == .failed ? "移除swiftLint失败， 原因：\(objectiveCLintResult.stdout.isEmpty ? objectiveCLintResult.stderr : objectiveCLintResult.stdout)" : "swiftLint 移除完成"
+        let objectiveCLintResult = scriptExecute(["brew uninstall swiftlint"])
+        let msg = objectiveCLintResult.status == .failed ? "移除swiftLint失败， 原因：\(objectiveCLintResult.stdout)" : "swiftLint 移除完成"
         return (objectiveCLintResult.status == .success, msg)
+    }
+}
+
+extension LinterToolsManager {
+    
+    fileprivate static func update() -> CheckResult {
+        let result = scriptExecute(["brew update && brew upgrade objc-lint && brew upgrade swiftlint"])
+        let msg = result.status == .failed ? "更新lint工具失败， 原因：\(result.stdout)" : "更新lint工具成功"
+        return (result.status == .success, msg)
     }
 }
